@@ -1,7 +1,15 @@
+#include <bank/object.hpp>
 #include <bank/bank.hpp>
 #include <bank/new.hpp>
 
+#include <synk/utility.hpp>
+
 #include <iostream>
+
+struct object : public bank::object
+{
+    void print(void) { std::cout << std::hex << std::showbase << this << std::endl; }
+};
 
 int main(void)
 {
@@ -10,10 +18,9 @@ int main(void)
     bank::open();
     std::cout << "Now Open" << std::endl;
     std::cout << "new" << std::endl;
-    int* x = new int;
-    *x = 4;
-    std::cout << *x << std::endl;
-    
+    synk::sleep::seconds(5);
+    object* x = new object();
+    x->print();
     delete x;
     std::cout << "delete" << std::endl;;
 }

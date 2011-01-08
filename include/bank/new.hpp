@@ -4,8 +4,8 @@
 #include <cstdlib>
 #include <new>
 
-void* operator new(size_t size) throw(std::bad_alloc);
-void operator delete(void* pointer) throw();
+//void* operator new(size_t size) throw(std::bad_alloc);
+//void operator delete(void* pointer) throw();
 
 namespace bank {
 

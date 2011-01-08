@@ -31,20 +31,24 @@ struct deallocator
 namespace bank {
 namespace detail {
 
-collector::collector(void) : thread(&collector::run, this) { this->thread.start(); }
+collector::collector(void) : thread(&collector::run, this), destruct(false) { this->thread.start(); }
 
 collector::~collector(void)
 {
-    if (this->objects.size() > 0) { this->condition.signal(); }
+    this->destruct = true;
+    std::cout << "Signaling thread" << std::endl;
+    this->condition.signal();
+    std::cout << "Waiting on thread" << std::endl;
     this->thread.wait();
-    if (this->mutex.is_locked()) { this->mutex.unlock(); }
+    std::cout << this << std::endl;
 }
 
 void collector::remove(const size_t& address)
 {
-    std::cout << address << std::endl;
+    std::cout << std::hex << address << std::endl;
     this->objects.push(address);
-    if (this->objects.full()) { this->condition.signal(); }
+    this->condition.signal();
+    //if (this->objects.full()) { this->condition.signal(); }
 }
 
 void collector::operator delete(void* pointer) { std::free(pointer); pointer = NULL; }
@@ -54,14 +58,19 @@ void collector::run(void* actual)
 {
     collector* self = static_cast<collector*>(actual);
     self->mutex.lock();
+    std::cout << "Collector thread is running, and the mutex is locked" << std::endl;
     pool::chunk_list& instance = manager::instance().memory->list;
     while (self->objects.empty())
     {
+        if (self->destruct) { break; }
         self->condition.wait(self->mutex);
+        std::cout << "signaled" << std::endl;
         while (!self->objects.empty())
         {
             synk::parallel_for_each(instance.begin(), instance.end(), deallocator(self->objects.pop()));
         }
+        std::cout << "Collection completed" << std::endl;
+        if (self->destruct) { break; }
     }
     self->mutex.unlock();
 }

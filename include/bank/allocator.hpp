@@ -31,7 +31,7 @@ class allocator : public detail::allocator::base<T>
 
         inline virtual ~allocator(void) { }
 
-        inline pointer allocate(size_type size) { return reinterpret_cast<pointer>(alloc(size)); }
+        inline pointer allocate(size_type size) { return reinterpret_cast<pointer>(bank::alloc(size)); }
         inline void deallocate(void* p, size_type) { bank::free(p); }
 
         inline size_type max_size(void) const { return std::numeric_limits<size_type>::max() / sizeof(T); }

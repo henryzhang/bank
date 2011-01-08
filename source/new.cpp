@@ -5,8 +5,8 @@
 
 #include <cstdlib>
 
-void* operator new(size_t size) throw(std::bad_alloc) { return bank::alloc(size); }
-void operator delete(void* pointer) throw() { bank::free(pointer); }
+//void* operator new(size_t size) throw(std::bad_alloc) { return bank::alloc(size); }
+//void operator delete(void* pointer) throw() { bank::free(pointer); }
 
 namespace bank {
 

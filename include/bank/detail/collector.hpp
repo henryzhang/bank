@@ -33,6 +33,7 @@ class collector
         synk::mutex mutex;
 
         queue objects;
+        bool destruct;
 };
 
 }} /* namespace bank::detail */
