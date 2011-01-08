@@ -7,7 +7,7 @@
 #include <cstdlib>
 
 #include <bank/detail/allocator/reserve.hpp>
-#include <bank/detail/chunk.hpp>
+#include <bank/error.hpp>
 
 namespace bank {
 namespace detail {
@@ -20,7 +20,7 @@ class pool
         typedef std::vector<chunk, allocator::reserve<chunk>> chunk_list;
         typedef chunk_list::iterator iterator;
 
-        explicit pool(const size_t& chunks) throw(std::bad_alloc);
+        explicit pool(const size_t& chunks) throw(error);
         virtual ~pool(void);
 
         void* allocate(const size_t& size);

@@ -5,9 +5,6 @@
 
 namespace bank {
 
-void open(const size_t& chunks) { detail::manager::instance().initialize(chunks); }
-void open(void) { open(256); }
-
-void bailout(void) { }
+void open(size_t chunks) { detail::manager::instance().initialize(chunks); }
 
 } /* namespace bank */

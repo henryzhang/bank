@@ -25,6 +25,12 @@ class allocator : public detail::allocator::base<T>
 
         template <typename U> struct rebind { typedef allocator<U> other; };
 
+        template <typename U> inline allocator(const allocator<U>& copy) { }
+        inline allocator(const allocator<T>& copy) { }
+        inline allocator(void) { }
+
+        inline virtual ~allocator(void) { }
+
         inline pointer allocate(size_type size) { return reinterpret_cast<pointer>(alloc(size)); }
         inline void deallocate(void* p, size_type) { bank::free(p); }
 

@@ -5,8 +5,7 @@
 
 namespace bank {
 
-void open(const size_t& chunks);
-void open(void);
+void open(size_t chunks=256);
 
 } /* namespace bank */
 

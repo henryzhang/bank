@@ -3,6 +3,7 @@
 #include <bank/detail/chunk.hpp>
 #include <bank/detail/types.hpp>
 #include <bank/detail/pool.hpp>
+#include <bank/error.hpp>
 
 #include <synk/utility.hpp>
 
@@ -10,6 +11,7 @@
 #include <iterator>
 #include <vector>
 #include <limits>
+#include <new>
 
 #include <cstdlib>
 
@@ -82,7 +84,7 @@ size_t alloc_and_set(size_t& begin, const size_t& size, bank::detail::pool::chun
     typedef bank::detail::pool::chunk_list::iterator iterator;
     
     void* buffer = std::malloc(size * _64KB);
-    if (buffer == NULL) { throw std::bad_alloc(); }
+    if (buffer == NULL) { throw bank::error("Could not allocate and set memory chunks"); }
     
     iterator start = list.begin();
     std::advance(start, begin);
@@ -102,11 +104,11 @@ size_t alloc_and_set(size_t& begin, const size_t& size, bank::detail::pool::chun
 namespace bank {
 namespace detail {
 
-pool::pool(const size_t& chunks) throw(std::bad_alloc) : list(max_chunks(), chunk(), allocator::reserve<chunk>(get_reserved())), index(0)
+pool::pool(const size_t& chunks) throw(error) : list(max_chunks(), chunk(), allocator::reserve<chunk>(get_reserved())), index(0)
 {
     std::cout << "In pool ctor" << std::endl;
     void* buffer = std::malloc(chunks * _64KB);
-    if (buffer == NULL) { throw std::bad_alloc(); }
+    if (buffer == NULL) { throw error("Could not allocate initial memory chunks in pool"); }
     std::for_each(this->list.begin(), this->list.begin() + (chunks + 1), ::chunk::setter(buffer));
     this->size = chunks;
 }

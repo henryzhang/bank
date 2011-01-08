@@ -20,10 +20,10 @@ namespace {
 struct deallocator
 {
     typedef typename bank::detail::pool::iterator::value_type T;
-    explicit deallocator(const size_t& address) : address(address) { }
+    explicit deallocator(size_t address) : address(address) { }
     void operator ()(const T& chunk) const { const_cast<T&>(chunk).deallocate(address); }
 
-    const size_t& address;
+    size_t address;
 };
 
 } /* namespace */
@@ -35,6 +35,7 @@ collector::collector(void) : thread(&collector::run, this) { this->thread.start(
 
 collector::~collector(void)
 {
+    if (this->objects.size() > 0) { this->condition.signal(); }
     this->thread.wait();
     if (this->mutex.is_locked()) { this->mutex.unlock(); }
 }
@@ -43,9 +44,7 @@ void collector::remove(const size_t& address)
 {
     std::cout << address << std::endl;
     this->objects.push(address);
-    //TODO: Don't make this a magic number >:(
-    this->condition.signal();
-    //if (this->objects.size() > 20) { this->condition.signal(); }
+    if (this->objects.full()) { this->condition.signal(); }
 }
 
 void collector::operator delete(void* pointer) { std::free(pointer); pointer = NULL; }
@@ -61,8 +60,7 @@ void collector::run(void* actual)
         self->condition.wait(self->mutex);
         while (!self->objects.empty())
         {
-            synk::parallel_for_each(instance.begin(), instance.end(), deallocator(self->objects.front()));
-            self->objects.pop();
+            synk::parallel_for_each(instance.begin(), instance.end(), deallocator(self->objects.pop()));
         }
     }
     self->mutex.unlock();
