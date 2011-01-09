@@ -3,25 +3,25 @@
 
 #include <limits>
 
-#include <bank/detail/allocator/base.hpp>
+#include <cstdlib>
+
 #include <bank/new.hpp>
 
 namespace bank {
 
 template <typename T>
-class allocator : public detail::allocator::base<T>
+class allocator
 {
     public:
-        typedef detail::allocator::base<T> super;
+        typedef ptrdiff_t difference_type;
+        typedef size_t size_type;
+        typedef T value_type;
 
-        typedef typename super::difference_type difference_type;
-        typedef typename super::value_type value_type;
-        typedef typename super::size_type size_type;
+        typedef const T& const_reference;
+        typedef const T* const_pointer;
 
-        typedef typename super::const_reference const_reference;
-        typedef typename super::const_pointer const_pointer;
-        typedef typename super::reference reference;
-        typedef typename super::pointer pointer;
+        typedef T& reference;
+        typedef T* pointer;
 
         template <typename U> struct rebind { typedef allocator<U> other; };
 
@@ -31,7 +31,20 @@ class allocator : public detail::allocator::base<T>
 
         inline virtual ~allocator(void) { }
 
+        inline void construct(pointer ptr, const_reference value)
+        {
+            ::operator new(static_cast<void*>(ptr)) value_type(value);
+        }
+
+        inline void construct(pointer ptr) { ::operator new(static_cast<void*>(ptr)) value_type(); }
+        inline void destroy(pointer ptr) { ptr->~value_type(); }
+
+        inline const_pointer address(const_reference ref) const { return &ref; }
+        inline pointer address(reference ref) const { return &ref; }
+
         inline pointer allocate(size_type size) { return reinterpret_cast<pointer>(bank::alloc(size)); }
+        
+        inline void deallocate(pointer p, size_type s) { this->deallocate(static_cast<void*>(p), s); }
         inline void deallocate(void* p, size_type) { bank::free(p); }
 
         inline size_type max_size(void) const { return std::numeric_limits<size_type>::max() / sizeof(T); }
