@@ -17,8 +17,9 @@ chunk::~chunk(void) { }
 
 void chunk::deallocate(const size_t& address)
 {
+    if (this->allocated == 0) { return; } // Waste of a this->has otherwise, as it means we are probably combined, or at the very least unused
     if (this->has(address)) { --this->allocated; }
-    if (this->allocated == 0) { this->next = 0; }
+    if (this->allocated == 0) { this->next = 0; } // However, We do a second check because a deallocation might get us back down to 0
 }
 
 void* chunk::allocate(const size_t& size)

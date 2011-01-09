@@ -31,9 +31,10 @@ class collector
         synk::condition condition;
         synk::thread thread;
         synk::mutex mutex;
-
+        //thread scanner;
         queue objects;
         bool destruct;
+        bool started;
 };
 
 }} /* namespace bank::detail */

@@ -67,7 +67,7 @@ struct finder
 
 } /* namespace chunk */
 
-inline double max_chunks(void) { return static_cast<double>(bank::detail::get_total_memory()) / _64KB; }
+inline double max_chunks(void) { return static_cast<double>(bank::detail::get_memory_size()) / _64KB; }
 
 /* Returns the amount of memory to use to track the chunks -- in bytes.
  * Technically it is a bit more than should it be, but this is done "just in case"

@@ -18,7 +18,7 @@ int main(void)
     bank::open();
     std::cout << "Now Open" << std::endl;
     std::cout << "new" << std::endl;
-    synk::sleep::seconds(5);
+//    synk::sleep::seconds(5);
     object* x = new object();
     x->print();
     delete x;

@@ -1,9 +1,12 @@
-#include <synk/detail/platform.hpp>
+#include <bank/detail/platform.hpp>
+#include <bank/detail/callable.hpp>
 #include <bank/detail/utility.hpp>
+#include <bank/detail/array.hpp>
 
 namespace {
 
-#if defined(SYNK_WINDOWS_PLATFORM)
+#if defined(BANK_WINDOWS_PLATFORM)
+#include <Windows.h>
 inline size_t get_memory(void)
 {
     MEMORYSTATUSEX status;
@@ -12,7 +15,11 @@ inline size_t get_memory(void)
     return status.ullTotalPhys;
 }
 
-#elif defined(SYNK_MACOSX_PLATFORM) || defined(SYNK_FREEBSD_PLATFORM)
+#elif defined(BANK_LINUX_PLATFORM)
+#include <unistd.h>
+inline size_t get_memory(void) { return size_t(sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGE_SIZE)); }
+
+#elif defined(BANK_MACOSX_PLATFORM) || defined(BANK_FREEBSD_PLATFORM)
 #include <sys/sysctl.h>
 inline size_t get_memory(void)
 {
@@ -24,17 +31,17 @@ inline size_t get_memory(void)
     return size;
 }
 
-#else
-#include <unistd.h>
-inline size_t get_memory(void) { return static_cast<size_t>(sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGE_SIZE)); }
-
-#endif /* SYNK_*_PLATFORM */
 
 } /* internal namespace */
 
 namespace bank {
 namespace detail {
 
-size_t get_total_memory(void) { return ::get_memory(); }
+void for_each(array* start, size_t end, callable& functor)
+{
+    for (size_t idx; idx < (end + 1); ++idx) { functor(start.at(idx)); }
+}
+
+size_t get_memory_size(void) { return ::get_memory(); }
 
 }} /* namespace bank::detail */

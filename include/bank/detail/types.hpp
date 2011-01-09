@@ -1,8 +1,9 @@
 #ifndef BANK_DETAIL_TYPES_HPP
 #define BANK_DETAIL_TYPES_HPP
 
+#include <bank/detail/platform.hpp>
 
-#if !defined(_MSC_VER)
+#if !defined(BANK_PLATFORM_WINDOWS)
     #include <stdint.h>
 namespace bank {
     typedef ::int8_t int8_t;
@@ -29,12 +30,13 @@ namespace bank {
     typedef unsigned __int64 uint64_t;
 
     #if defined(_WIN64)
-        typedef signed __int64 ssize_t;
+        typedef int64_t ssize_t;
     #else
-        typedef signed __int32 ssize_t;
+        typedef int32_t ssize_t;
     #endif /* _WIN64 */
-#endif /* _MSC_VER */
+
+#endif /* BANK_PLATFORM_WINDOWS */
 
 } /* namespace bank */
 
-#endif /* BANK_TYPES_HPP */
+#endif /* BANK_DETAIL_TYPES_HPP */

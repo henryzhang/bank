@@ -19,10 +19,13 @@ if (NOT MSVC)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCC AND NOT ${USE_CLANG_COMPILER})
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} =dumpversion OUTPUT_VARIABLE GCC_VERSION)
-    if (NOT ${GCC_VERSION} MATCHES ".*4\\.[5-9].*")
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+    if (NOT ${GCC_VERSION} MATCHES ".*[4-9]\\.[5-9].*")
+        find_program(GCC_REQUIRED g++4.5 ENV PATH)
+        set(CMAKE_CXX_COMPILER ${GCC_REQUIRED} CACHE STRING "" FORCE)
         message(FATAL_ERROR "Requires g++ version 4.5 or later")
     endif ()
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -flto) # Adds link time optimization
 endif ()
 
 file(GLOB_RECURSE BANK_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
