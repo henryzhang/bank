@@ -5,11 +5,9 @@
 namespace bank {
 namespace detail {
 
-/* A bit of an unrolled loop */
 void for_each(array* start, size_t end, callable& functor)
 {
-    //TODO: Check to get the modulus of end % 4
-    for (size_t idx; idx < (end + 1); ++idx)
+    for (size_t idx = 0; idx < (end + 1); ++idx)
     {
         functor(start.at(idx));
         functor(start.at(idx + 1));

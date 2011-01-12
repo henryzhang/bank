@@ -8,13 +8,14 @@ namespace bank {
 class error : public std::exception
 {
     public:
-        explicit error(const char* message) throw();
+        explicit error(const char*) throw();
         virtual ~error(void) throw();
 
         virtual const char* what(void) const throw();
+
     private:
         const char* message;
-};
+}
 
 } /* namespace bank */
 

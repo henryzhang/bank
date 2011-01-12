@@ -11,12 +11,11 @@ namespace detail {
 class chunk
 {
     public:
-        explicit chunk(const chunk& copy);
         explicit chunk(void);
         virtual ~chunk(void);
 
         void deallocate(const size_t& address);
-        void* allocate(const size_t& size);
+        void* allocate(const size_t& address);
 
         void decouple(const chunk& other);
         void combine(const chunk& other);

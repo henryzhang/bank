@@ -19,15 +19,17 @@ class manager
 {
     public:
         virtual ~manager(void);
-
+    
     private:
         explicit manager(const manager& copy);
         explicit manager(void);
 
         void initialize(const size_t& chunks);
+        void shutdown(void);
+
         static manager& instance(void);
 
-        friend class detail::collector;
+        friend class collector;
 
         friend void* bank::alloc(size_t);
         friend void bank::free(void*);
@@ -40,6 +42,6 @@ class manager
         bool initialized;
 };
 
-}} /* namespace bank:detail */
+}} /* namespace bank::detail */
 
 #endif /* BANK_DETAIL_MANAGER_HPP */

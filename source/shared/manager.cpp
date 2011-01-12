@@ -9,23 +9,24 @@ namespace bank {
 namespace detail {
 
 manager::manager(void) : waste(NULL), memory(NULL), initialized(false) { }
-manager::~manager(void)
-{
-    if (this->initialized)
-    {
-        delete this->waste;
-        delete this->memory;
-    }
-}
+manager::~manager(void) { }
 
 void manager::initialize(const size_t& chunks)
 {
     if (this->initialized) { return; }
 
     this->memory = new pool(chunks);
-    this->waste = new collector;
-
+    this->waste = new collector(this->memory->list);
     this->initialized = true;
+}
+
+void manager::shutdown(void)
+{
+    if (this->initialized)
+    {
+        delete this->waste;
+        delete this->memory;
+    }
 }
 
 manager& manager::instance(void)

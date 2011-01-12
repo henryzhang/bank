@@ -3,14 +3,11 @@
 
 #include <cstdlib>
 
-#include <bank/detail/iterator.hpp>
-
 namespace bank {
 namespace detail {
 
 class chunk;
 
-/* Specialized container for the memory pool whih houses all the chunks */
 class array
 {
     public:
@@ -19,13 +16,8 @@ class array
 
         chunk& at(size_t index);
 
-        iterator begin(void);
-        iterator end(void);
-
         bool operator ==(const array& right);
         bool operator !=(const array& right);
-
-        chunk& operator [](size_t index);
 
     private:
         chunk* start;

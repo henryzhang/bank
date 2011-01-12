@@ -1,8 +1,6 @@
 #ifndef BANK_DETAIL_QUEUE_HPP
 #define BANK_DETAIL_QUEUE_HPP
 
-#include <new>
-
 #include <cstdlib>
 
 #include <bank/error.hpp>
@@ -10,8 +8,8 @@
 namespace bank {
 namespace detail {
 
-/* Used by the collector to actually remove members
- * Works like a circular buffer of sorts, but is specialized for size_t types
+/* Used by the collector to remove members, works like a circular buffer of sorts, 
+ * but is specialized for size_t types
  */
 class queue
 {
@@ -28,11 +26,11 @@ class queue
         bool full(void) const;
 
     private:
-        size_t* start;  // Points to the true start of the memory buffer
-        size_t* end;    // Points to the true end of the memory buffer
+        size_t const* start; // Points to the true start of the memory buffer
+        size_t const* end;   // Points to the true end of the memory buffer
 
-        size_t* first;  // returned by queue::front()
-        size_t* last;   // returned by queue::back()
+        size_t* first; // returned by queue::front() -- look into making it volatile?
+        size_t* last;  // returned by queue::back() -- look into making it volatile?
 };
 
 }} /* namespace bank::detail */

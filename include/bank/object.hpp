@@ -8,8 +8,8 @@ namespace bank {
 class object
 {
     public:
-        void operator delete(void* pointer);
-        void* operator new(size_t size);
+        void operator delete(void*);
+        void operator new(size_t);
 };
 
 } /* namespace bank */

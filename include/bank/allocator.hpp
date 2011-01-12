@@ -1,11 +1,13 @@
 #ifndef BANK_ALLOCATOR_HPP
 #define BANK_ALLOCATOR_HPP
 
+/* Used for the C++ STL Types */
+
 #include <limits>
 
 #include <cstdlib>
 
-#include <bank/new.hpp>
+#include <bank/bank.hpp>
 
 namespace bank {
 
@@ -54,5 +56,6 @@ class allocator
 };
 
 } /* namespace bank */
+
 
 #endif /* BANK_ALLOCATOR_HPP */

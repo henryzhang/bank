@@ -5,10 +5,12 @@
     #define BANK_WINDOWS_PLATFORM
 #elif defined(__FreeBSD__)
     #define BANK_FREEBSD_PLATFORM
+    #define BANK_GENBSD_PLATFORM
 #elif defined(__APPLE__)
     #define BANK_MACOSX_PLATFORM
+    #define BANK_GENBSD_PLATFORM
 #elif defined(__linux) || defined(linux)
-    #define SYNK_LINUX_PLATFORM
+    #define BANK_LINUX_PLATFORM
 #else
     #error "Unknown Platform :("
 #endif

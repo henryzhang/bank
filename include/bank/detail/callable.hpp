@@ -6,7 +6,7 @@ namespace detail {
 
 class chunk;
 
-/* All functors for the for_each function MUST inherit from this type */
+/* All functors used by the custom tailored for_each function MUST inherit from this type */
 struct callable { virtual void operator ()(chunk& item) = 0; };
 
 }} /* namespace bank::detail */

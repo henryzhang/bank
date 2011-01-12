@@ -1,119 +1,80 @@
-#include <bank/detail/allocator/reserve.hpp>
+#include <bank/detail/callable.hpp>
 #include <bank/detail/utility.hpp>
+#include <bank/detail/array.hpp>
 #include <bank/detail/chunk.hpp>
 #include <bank/detail/types.hpp>
 #include <bank/detail/pool.hpp>
 #include <bank/error.hpp>
 
-#include <synk/utility.hpp>
-
-#include <algorithm>
-#include <iterator>
-#include <vector>
 #include <limits>
-#include <new>
 
 #include <cstdlib>
-
-#include <iostream>
 
 namespace {
 
 const bank::uint32_t _64KB = std::numeric_limits<bank::uint16_t>::max() + 1;
 
-namespace chunk {
-
-struct setter
-{
-    explicit inline setter(void* buffer) : address(reinterpret_cast<size_t>(buffer)) { }
-    template <typename T> inline void operator ()(T& item)
-    {
-        item.set(this->address, _64KB);
-        this->address += (_64KB + 1);
-    }
-
-    size_t address;
-};
-
-struct combiner
-{
-    typedef bank::detail::chunk& block;
-    explicit inline combiner(block chunk) : chunk(chunk) { }
-    template <typename T> inline void operator ()(T& item) { this->chunk.combine(item); }
-    block chunk;
-};
-
-/* No lock is used because if the operator () finds two free chunks, it does not matter as to which one is
- * set. We just want a free chunk is all :)
- */
-struct finder
-{
-    typedef const bank::detail::pool::iterator& iterator;
-    explicit inline finder(size_t& index, finder::iterator start) : index(index), found(false), start(start) { }
-    template <typename T> inline void operator ()(const T& item) const
-    {
-        if (found) { return; }
-        if (item.is_free())
-        {
-            this->found = true;
-            const_cast<size_t&>(this->index) = (&item - &*this->start) / sizeof(bank::detail::chunk); // Am I cheating? :P
-        }
-    }
-
-    const size_t& index;
-    mutable bool found;
-    iterator start;
-};
-
-} /* namespace chunk */
-
-inline double max_chunks(void) { return static_cast<double>(bank::detail::get_memory_size()) / _64KB; }
+inline size_t max_chunks(void) { return bank::detail::get_memory_size() / _64KB; }
 
 /* Returns the amount of memory to use to track the chunks -- in bytes.
  * Technically it is a bit more than should it be, but this is done "just in case"
  * If you want to get those few extra kilobytes back, this is where you should change the algorithm
  */
-inline size_t get_reserved(void)
+inline size_t allocate_with_set(bank::detail::array& list, size_t start, size_t size)
 {
-    double reserved = max_chunks() * sizeof(bank::detail::chunk);
-    return (static_cast<size_t>(reserved) / _64KB + 1) * _64KB;
-}
-
-size_t alloc_and_set(size_t& begin, const size_t& size, bank::detail::pool::chunk_list& list)
-{
-    typedef bank::detail::pool::chunk_list::iterator iterator;
-    
     void* buffer = std::malloc(size * _64KB);
     if (buffer == NULL) { throw bank::error("Could not allocate and set memory chunks"); }
-    
-    iterator start = list.begin();
-    std::advance(start, begin);
-
-    iterator end = start;
-    std::advance(end, size + 1);
-
-    std::for_each(start, end, ::chunk::setter(buffer));
-
-    size_t idx = begin;
-    begin += size + 1;
-    return idx;
+//    for_each();
 }
 
-} /* internal namespace */
+struct setter : public bank::detail::callable
+{
+    typedef bank::detail::chunk chunk;
+    inline explicit setter(void* buffer) : address(reinterpret_cast<size_t>(buffer)) { }
+    inline void operator ()(chunk& item) { item.set(this->address, _64KB); this->address += (_64KB + 1); }
+    size_t address;
+};
+
+struct combiner : public bank::detail::callable
+{
+    typedef bank::detail::chunk chunk;
+    inline explicit combiner(chunk& chunk) : chunk(chunk) { }
+    inline void operator ()(chunk& item) { this->chunk.combine(item); }
+    chunk& chunk;
+};
+
+struct finder : public bank::detail::callable
+{
+    typedef bank::detail::chunk chunk;
+    inline explicit finder(size_t& index) : index(index), found(false) { }
+    inline void operator ()(chunk& item)
+    {
+        if (found) { return; }
+        if (item.is_free()) { this->found = true; return; }
+        ++this->index;
+    }
+    size_t& index;
+    bool found;
+};
+
+} /* namespace */
 
 namespace bank {
 namespace detail {
 
-pool::pool(const size_t& chunks) throw(error) : list(max_chunks(), chunk(), allocator::reserve<chunk>(get_reserved())), index(0)
+pool::pool(const size_t& chunks) throw(error) : list(max_chunks()), index(0), size(chunks)
 {
-    std::cout << "In pool ctor" << std::endl;
+    std::cout << "in pool ctor" << std::endl;
+    if (chunks > max_chunks()) { throw error("Requested number of chunks is larger than maximum count"); }
     void* buffer = std::malloc(chunks * _64KB);
     if (buffer == NULL) { throw error("Could not allocate initial memory chunks in pool"); }
-    std::for_each(this->list.begin(), this->list.begin() + (chunks + 1), ::chunk::setter(buffer));
-    this->size = chunks;
+    for_each(this->list, chunks, setter(buffer));
 }
 
 pool::~pool(void) { }
+
+void pool::operator delete(void* pointer) { std::free(pointer); pointer = NULL; }
+void* pool::operator new(size_t size) { return std::malloc(size); }
 
 /* If the given size is larger than a chunk size, we must then perform a check to see if we currently
  * have enough memory left from where we are, to the end of the currently tracked number of chunks,
@@ -140,7 +101,7 @@ pool::~pool(void) { }
  * 
  * Effectively, when it comes to allocating memory, this is where the magic happens :)
  * I'm also fairly certain this is the largest function in the entire library.
- */
+ *
 
 void* pool::allocate(const size_t& size)
 {
@@ -169,7 +130,7 @@ void* pool::allocate(const size_t& size)
             size_t idx = this->index;
             const iterator& end = this->list.begin() + this->size;
             synk::parallel_for_each(this->list.begin(), end, ::chunk::finder(idx, this->list.begin()));
-            /* If the index has not changed at all, then we need to allocate 10 new chunks */
+            * If the index has not changed at all, then we need to allocate 10 new chunks *
             if (this->index == idx) { idx = alloc_and_set(this->size, 10, this->list); }
             this->index = idx; // Update the current index
             return this->get_current().allocate(size);
@@ -177,14 +138,7 @@ void* pool::allocate(const size_t& size)
         else { return this->list.at((++this->index)).allocate(size); }
     }
     return buffer;
-}
+}*/
 
-chunk& pool::get_index(const size_t& index) { return this->list.at(index); }
-chunk& pool::get_current(void) { return this->list.at(this->index); }
-size_t pool::get_size(void) const { return this->list.size(); }
-
-chunk& pool::operator [](const size_t& index) { return this->get_index(index); }
-void pool::operator delete(void* pointer) { std::free(pointer); pointer = NULL; }
-void* pool::operator new(size_t size) { return std::malloc(size); }
 
 }} /* namespace bank::detail */

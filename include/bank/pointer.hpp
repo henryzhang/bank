@@ -2,7 +2,7 @@
 #define BANK_POINTER_HPP
 
 #include <bank/object.hpp>
-#include <bank/new.hpp>
+#include <bank/bank.hpp>
 
 namespace bank {
 
@@ -11,8 +11,8 @@ class pointer : public object
 {
     public:
         inline explicit pointer(T* ptr) : ptr(ptr) { }
-        inline explicit pointer(void) : ptr(NULL) { }
-        inline virtual ~pointer(void) { if (this->ptr) { delete this->ptr; } }
+        inline explicit pointer(void) : ptr(new(alloc(sizeof(T))) ptr()) { }
+        inline virtual ~pointer(void) { this->ptr->~T(); bank::free(this->ptr); }
 
         inline T* get(void) const { return this->ptr; }
 

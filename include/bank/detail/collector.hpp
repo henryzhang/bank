@@ -3,23 +3,21 @@
 
 #include <cstdlib>
 
-#include <synk/detail/platform.hpp>
-#include <synk/condition.hpp>
-#include <synk/thread.hpp>
-#include <synk/mutex.hpp>
-
+#include <bank/detail/thread.hpp>
 #include <bank/detail/queue.hpp>
 
 namespace bank {
 namespace detail {
 
+class array;
+
 class collector
 {
     public:
-        explicit collector(void);
+        explicit collector(array& memory);
         virtual ~collector(void);
 
-        void remove(const size_t& address); // Adds the given address to the queue
+        void remove(const size_t& address);
 
         void operator delete(void*);
         void* operator new(size_t);
@@ -28,11 +26,9 @@ class collector
         explicit collector(const collector& copy);
         static void run(void*);
 
-        synk::condition condition;
-        synk::thread thread;
-        synk::mutex mutex;
-        //thread scanner;
+        thread scanner;
         queue objects;
+        array& memory;
         bool destruct;
         bool started;
 };

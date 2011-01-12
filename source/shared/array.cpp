@@ -12,7 +12,7 @@ array::~array(void) { delete[] this->start; }
 chunk& array::at(size_t index)
 {
     if (index >= size) { return *this->start; }
-    return *this->start[index];
+    return *(this->start[index]);
 }
 
 bool array::operator ==(const array& right)
@@ -25,6 +25,4 @@ bool array::operator !=(const array& right)
     return (this->start != right.start) && (this->size != right.size);
 }
 
-chunk& array::operator [](size_t index) { return this->at(index); }
-
-}} /* namespace bank::detail */
+}} /* namespace bank */
