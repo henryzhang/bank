@@ -20,19 +20,28 @@ endif ()
 
 if (CMAKE_COMPILER_IS_GNUCC AND NOT ${USE_CLANG_COMPILER})
     execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-    if (NOT ${GCC_VERSION} MATCHES ".*[4-9]\\.[5-9].*")
-        find_program(GCC_REQUIRED g++4.5 ENV PATH)
-        set(CMAKE_CXX_COMPILER ${GCC_REQUIRED} CACHE STRING "" FORCE)
-        message(FATAL_ERROR "Requires g++ version 4.5 or later")
+    if (${GCC_VERSION} MATCHES ".*[4-9]\\.[5-9].*")
+        set(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} -flto) # Adds link time optimization
     endif ()
-    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -flto) # Adds link time optimization
 endif ()
 
-file(GLOB_RECURSE BANK_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
+# Glob file expression
+if (MSVC)
+    set(GLOB_EXPRESSION ${CMAKE_CURRENT_SOURCE_DIR}/source/win32/*.cpp)
+endif ()
+if (UNIX)
+    set(GLOB_EXPRESSION ${CMAKE_CURRENT_SOURCE_DIR}/source/posix/*.cpp)
+endif ()
+set(GLOB_EXPRESSION ${GLOB_EXPRESSION} ${CMAKE_CURRENT_SOURCE_DIR}/source/shared/*.cpp)
+
+file(GLOB_RECURSE BANK_SOURCE ${GLOB_EXPRESSION})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_library(bank STATIC ${BANK_SOURCE})
 
-target_link_libraries(bank synk)
+# We depend on pthreads for POSIX
+if (UNIX)
+    target_link_libraries(bank pthread)
+endif ()
 
 if (BUILD_EXAMPLE)
     add_executable(bank-example ${CMAKE_CURRENT_SOURCE_DIR}/examples/bank-example.cpp)

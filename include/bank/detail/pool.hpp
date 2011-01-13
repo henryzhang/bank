@@ -29,8 +29,9 @@ class pool
 
         friend class manager;
 
-        queue alloc;
+        queue allocs;
         array list;
+
         size_t index;
         size_t size;
 };

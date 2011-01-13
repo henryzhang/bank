@@ -29,8 +29,8 @@ class queue
         size_t const* start; // Points to the true start of the memory buffer
         size_t const* end;   // Points to the true end of the memory buffer
 
-        size_t* first; // returned by queue::front() -- look into making it volatile?
-        size_t* last;  // returned by queue::back() -- look into making it volatile?
+        size_t volatile* first; // The "true" start of the queue
+        size_t volatile* last;  // The "true" end of the queue
 };
 
 }} /* namespace bank::detail */

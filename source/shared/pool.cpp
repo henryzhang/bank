@@ -71,7 +71,7 @@ pool::pool(const size_t& chunks) throw(error) : list(max_chunks()), index(0), si
     for_each(this->list, chunks, setter(buffer));
 }
 
-pool::~pool(void) { }
+pool::~pool(void) { while (!this->allocs.empty()) { std::free(this->allocs.pop()); } }
 
 void pool::operator delete(void* pointer) { std::free(pointer); pointer = NULL; }
 void* pool::operator new(size_t size) { return std::malloc(size); }
@@ -101,7 +101,7 @@ void* pool::operator new(size_t size) { return std::malloc(size); }
  * 
  * Effectively, when it comes to allocating memory, this is where the magic happens :)
  * I'm also fairly certain this is the largest function in the entire library.
- *
+ */
 
 void* pool::allocate(const size_t& size)
 {
@@ -138,7 +138,7 @@ void* pool::allocate(const size_t& size)
         else { return this->list.at((++this->index)).allocate(size); }
     }
     return buffer;
-}*/
+}
 
 
 }} /* namespace bank::detail */
