@@ -7,6 +7,8 @@
  * The actual thread is not started on the system until thread::start is called, rather than on creation.
  */
 
+#include <cstdlib>
+
 namespace bank {
 namespace detail {
 

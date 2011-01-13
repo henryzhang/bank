@@ -15,7 +15,7 @@ class error : public std::exception
 
     private:
         const char* message;
-}
+};
 
 } /* namespace bank */
 

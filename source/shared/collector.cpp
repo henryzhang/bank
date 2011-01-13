@@ -1,6 +1,4 @@
 #include <bank/detail/collector.hpp>
-#include <bank/detail/callable.hpp>
-#include <bank/detail/utility.hpp>
 #include <bank/detail/thread.hpp>
 #include <bank/detail/array.hpp>
 #include <bank/detail/chunk.hpp>
@@ -11,11 +9,12 @@
 
 namespace {
 
-struct deallocator : public bank::detail::callable
+struct deallocator
 {
     typedef bank::detail::chunk chunk;
-    explicit deallocator(size_t address) : address(address) { }
+    inline explicit deallocator(void) : address(0) { }
     inline void operator ()(chunk& item) { item.deallocate(this->address); }
+    inline void operator =(const size_t& address) { this->address = address; }
     size_t address;
 };
 
@@ -40,9 +39,9 @@ collector::~collector(void)
 
 void collector::remove(const size_t& address)
 {
-    std::cout << std::hex << address << std::endl;
+    while (this->objects.full()) { thread::yield(); } // Hopefully by yielding, we can give the collector enough time to remove some objects.
     this->objects.push(address);
-    if (this->objects.full()) { thread::yield(); }
+    std::cout << "Deferring removal of address: " << address << std::endl;
 }
 
 void collector::operator delete(void* pointer) { std::free(pointer); pointer = NULL; }
@@ -51,6 +50,7 @@ void* collector::operator new(size_t size) { return std::malloc(size); }
 void collector::run(void* actual)
 {
     collector* self = static_cast<collector*>(actual);
+    deallocator functor;
     self->started = true;
     std::cout << "collector thread is now running" << std::endl;
 
@@ -60,7 +60,8 @@ void collector::run(void* actual)
         while(self->objects.empty() && !self->destruct) { thread::yield(); }
         while(!self->objects.empty())
         {
-            for_each(&self->memory, self->memory.size(), deallocator(self->objects.pop()));
+            functor = self->objects.pop();
+            for (size_t idx = 0; idx < self->memory.get_size(); idx++) { functor(self->memory.at(idx)); }
         }
     }
 }

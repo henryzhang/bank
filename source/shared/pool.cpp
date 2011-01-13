@@ -1,4 +1,3 @@
-#include <bank/detail/callable.hpp>
 #include <bank/detail/utility.hpp>
 #include <bank/detail/array.hpp>
 #include <bank/detail/chunk.hpp>
@@ -9,6 +8,7 @@
 #include <limits>
 
 #include <cstdlib>
+#include <iostream>
 
 namespace {
 
@@ -27,7 +27,7 @@ inline size_t allocate_with_set(bank::detail::array& list, size_t start, size_t 
 //    for_each();
 }
 
-struct setter : public bank::detail::callable
+struct setter
 {
     typedef bank::detail::chunk chunk;
     inline explicit setter(void* buffer) : address(reinterpret_cast<size_t>(buffer)) { }
@@ -35,15 +35,15 @@ struct setter : public bank::detail::callable
     size_t address;
 };
 
-struct combiner : public bank::detail::callable
+struct combiner
 {
     typedef bank::detail::chunk chunk;
-    inline explicit combiner(chunk& chunk) : chunk(chunk) { }
-    inline void operator ()(chunk& item) { this->chunk.combine(item); }
-    chunk& chunk;
+    inline explicit combiner(chunk& chk) : chk(chk) { }
+    inline void operator ()(chunk& item) { this->chk.combine(item); }
+    chunk& chk;
 };
 
-struct finder : public bank::detail::callable
+struct finder
 {
     typedef bank::detail::chunk chunk;
     inline explicit finder(size_t& index) : index(index), found(false) { }
@@ -65,13 +65,13 @@ namespace detail {
 pool::pool(const size_t& chunks) throw(error) : list(max_chunks()), index(0), size(chunks)
 {
     std::cout << "in pool ctor" << std::endl;
-    if (chunks > max_chunks()) { throw error("Requested number of chunks is larger than maximum count"); }
+    if (chunks > max_chunks()) { throw error("Requested number of chunks is larger than system maximum"); }
     void* buffer = std::malloc(chunks * _64KB);
     if (buffer == NULL) { throw error("Could not allocate initial memory chunks in pool"); }
     for_each(this->list, chunks, setter(buffer));
 }
 
-pool::~pool(void) { while (!this->allocs.empty()) { std::free(this->allocs.pop()); } }
+pool::~pool(void) { while (!this->allocs.empty()) { std::free(reinterpret_cast<void*>(this->allocs.pop())); } }
 
 void pool::operator delete(void* pointer) { std::free(pointer); pointer = NULL; }
 void* pool::operator new(size_t size) { return std::malloc(size); }

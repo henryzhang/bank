@@ -37,7 +37,7 @@ void chunk::combine(const chunk& other)
 
 void chunk::set(const size_t& address, const size_t& size)
 {
-    this-.start = address;
+    this->start = address;
     this->end = this->start + size;
 }
 

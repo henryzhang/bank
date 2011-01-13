@@ -3,6 +3,8 @@
 #include <bank/detail/types.hpp>
 #include <bank/error.hpp>
 
+#include <limits>
+
 #include <cstdlib>
 
 #include <pthread.h>
@@ -25,12 +27,12 @@ struct thread
 namespace bank {
 namespace detail {
 
-thread::~thread(void) { pthread_detach(&thread::get()); }
+thread::~thread(void) { pthread_detach(::thread::get()); }
 void thread::yield(void) { pthread_yield(); }
 
 void thread::wait(void)
 {
-    if (pthread_join(thread::get(), NULL) != 0)
+    if (pthread_join(::thread::get(), NULL) != 0)
     {
         switch (errno)
         {
@@ -45,7 +47,7 @@ void thread::wait(void)
 void thread::start(void)
 {
     pthread_attr_t attr;
-    if ((pthread_attr_init(&attr) != 0) || (pthread_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE) != 0))
+    if ((pthread_attr_init(&attr) != 0) || (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE) != 0))
     {
         switch (errno)
         {
@@ -54,8 +56,12 @@ void thread::start(void)
         }
     }
 
+    uint32_t stack_size = (std::numeric_limits<uint16_t>::max() + 1) * 2;
+    if (stack_size < PTHREAD_STACK_MIN) { stack_size = PTHREAD_STACK_MIN; }
+    pthread_attr_setstacksize(&attr, stack_size);
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-    if (pthread_create(&thread::get(), &attr, thread::execute, this) != 0)
+
+    if (pthread_create(&::thread::get(), &attr, ::thread::execute, this) != 0)
     {
         switch (errno)
         {

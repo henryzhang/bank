@@ -16,7 +16,7 @@ size_t get_memory_size(void)
     size_t name_length = sizeof(mib) / sizeof(mib[0]);
     size_t length = sizeof(size);
     sysctl(mib, name_length, &size, &length, NULL, 0);
-    return size
+    return size;
     #elif defined(BANK_LINUX_PLATFORM)
     return size_t(sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGE_SIZE));
     #else

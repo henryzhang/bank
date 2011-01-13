@@ -15,6 +15,8 @@ class array
         virtual ~array(void);
 
         chunk& at(size_t index);
+        
+        size_t get_size(void) const;
 
         bool operator ==(const array& right);
         bool operator !=(const array& right);

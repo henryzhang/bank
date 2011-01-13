@@ -9,7 +9,7 @@ class object
 {
     public:
         void operator delete(void*);
-        void operator new(size_t);
+        void* operator new(size_t);
 };
 
 } /* namespace bank */

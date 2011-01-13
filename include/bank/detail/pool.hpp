@@ -3,8 +3,8 @@
 
 #include <cstdlib>
 
+#include <bank/detail/tracker.hpp>
 #include <bank/detail/array.hpp>
-#include <bank/detail/queue.hpp>
 #include <bank/error.hpp>
 
 namespace bank {
@@ -29,7 +29,7 @@ class pool
 
         friend class manager;
 
-        queue allocs;
+        tracker allocs;
         array list;
 
         size_t index;

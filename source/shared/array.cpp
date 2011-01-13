@@ -12,8 +12,10 @@ array::~array(void) { delete[] this->start; }
 chunk& array::at(size_t index)
 {
     if (index >= size) { return *this->start; }
-    return *(this->start[index]);
+    return this->start[index];
 }
+
+size_t array::get_size(void) const { return this->size; }
 
 bool array::operator ==(const array& right)
 {
