@@ -28,7 +28,7 @@ endif ()
 # Glob file expression
 if (MSVC)
     set(GLOB_EXPRESSION ${CMAKE_CURRENT_SOURCE_DIR}/source/win32/*.cpp)
-    add_definitions("/wd4290") # It is safe to disable this warning
+    add_definitions("/W4 /wd4290 /wd4512") # It is safe to disable these warnings, as well as increase the warnin level to max
 endif ()
 if (UNIX)
     set(GLOB_EXPRESSION ${CMAKE_CURRENT_SOURCE_DIR}/source/posix/*.cpp)

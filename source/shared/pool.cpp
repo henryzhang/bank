@@ -12,7 +12,9 @@
 
 namespace {
 
+/* An extremely weird bug manifests if we don't cast uint32_t::max to a 64-bit integer first */
 const bank::uint32_t _64KB = std::numeric_limits<bank::uint16_t>::max() + 1;
+const bank::uint64_t _4GB = static_cast<uint64_t>(std::numeric_limits<bank::uint32_t>::max()) + 1;
 
 /* maximum number of chunks, followed by the number of times the pool can allocate from the system
  * These values are memoized at runtime, to save any future calls to them, at the expense of some memory.
@@ -39,15 +41,14 @@ inline size_t find_range(bank::detail::array& range, const size_t& size, const s
 {
     size_t index = 0;
     size_t current = 0;
-
+    //TODO: Needs better logic flow -- DESPERATELY
     for (size_t idx = 0; idx < size; ++idx)
     {
         bank::detail::chunk& ref = range.at(idx);
-//TODO: Fix to make sure we can actually combine all of these.
-//if (ref.next_to(range.at(idx + 1)) && ref.is_free())
-//          && ref.next_to(range.at(idx + 1)) ? ++current : current = 0;
-        if (current == 0) { ++index; }
+        if (ref.is_free()) { ++current; } else { current = 0; }
+        if (!ref.next_to(range.at(idx + 1)) && current != count) { current = 0; }
         if (current == count) { return index; }
+        if (current == 0) { ++index; }
     }
 
     return max_chunks() + 1;
@@ -76,36 +77,14 @@ pool::~pool(void) { }
 void pool::operator delete(void* pointer) { std::free(pointer); pointer = NULL; }
 void* pool::operator new(size_t size) { return std::malloc(size); }
 
-/* If the given size is larger than a chunk size, we must then perform a check to see if we currently
- * have enough memory left from where we are, to the end of the currently tracked number of chunks,
- * as `this->list.size()` is (hopefully) never equal to `this->size`.
- *
- * If there is not enough space left in the current number of chunks, we allocate enough chunks, in bytes,
- * set them to chunks, then combine those chunks, so that behavior for the collector stays consistent.
- *
- * If there is enough space, then we simply combine said chunks, and then return the memory allocated from
- * these chunks.
- *
- * Possible issues are if the requested size is equal to `(this->size - this->index) * _64KB + 1`, as it would
- * mean the rest of the chunk is nearly wasted, though the gc should eventually use the rest of it.
- *
- * For the "normal" allocation call, we allocate from the current chunk. If the current chunk returns NULL
- * then we move to the next chunk in the ring. If the current chunk is the "last" chunk, we check to see
- * if there are any free chunks in the ring. If there are, we set the index to that, allocate, and then move
- * on, otherwise we allocate 10 new chunks, move to the first, then allocate and return.
- * If the current chunk is not the last chunk, then a move forward is performed, until a given chunk is
- * found to be free. If none can be found, then the previously mentioned allocation is performed, and the
- * same results are given. This *can* cause an issue where there are large rings (as the indexing forward
- * is performed in worst-case O(n)), so a few optimizations are performed. Specifically use of the
- * synk::parallel_for_each function, though this may cause a slowdown for systems with small amounts of memory
- * 
- * Effectively, when it comes to allocating memory, this is where the magic happens :)
+/* Effectively, when it comes to allocating memory, this is where the magic happens :)
  * This is the largest function in the entire library.
  */
 
 // If there were any optimizations to be done, many would probably go here. :/
 void* pool::allocate(const size_t& size)
 {
+    if (size > _4GB) { return NULL; } // What could you possibly be doing? :|
     if (size > _64KB) // Is bigger than a "normal" alloc, so we need to do some special work
     {
         size_t required_chunks = (size / _64KB) + 1;
@@ -143,7 +122,6 @@ void* pool::allocate(const size_t& size)
     {
         if (this->index + 1 >= this->size || !this->list.at(this->index + 1).is_free())
         {
-            size_t idx = this->index;
             this->index = find_single(this->list, this->size);
             if (this->index == max_chunks() + 1)
             {
