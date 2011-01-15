@@ -6,6 +6,7 @@
 namespace bank {
 
 void open(size_t chunks=256);
+void close(void);
 
 void* alloc(size_t size);
 void free(void* pointer);

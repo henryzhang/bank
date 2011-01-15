@@ -13,6 +13,7 @@ namespace detail {
 chunk::chunk(void) : start(0), end(0), allocated(0), next(0), combined(false) { }
 chunk::~chunk(void) { }
 
+/* Luckily these are ignored by clang and gcc */
 #pragma warning(disable: 4267)
 void* chunk::allocate(const size_t& size)
 {
@@ -25,7 +26,6 @@ void* chunk::allocate(const size_t& size)
 
 void chunk::deallocate(const size_t& address)
 {
-    if (this->allocated == 0) { return; }
     if (this->has(address)) { --this->allocated; }
     if (this->allocated == 0) { this->next = 0; }
     if ((this->get_size() > _64KB) && (this->next == 0))

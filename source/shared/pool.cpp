@@ -70,6 +70,7 @@ pool::pool(const size_t& chunks) throw(error) : allocs(max_allocs()), list(max_c
         this->list.at(idx).set(address);
         address += (_64KB + 1);
     }
+    this->allocs.push(buffer);
 }
 
 pool::~pool(void) { }
@@ -84,6 +85,7 @@ void* pool::operator new(size_t size) { return std::malloc(size); }
 // If there were any optimizations to be done, many would probably go here. :/
 void* pool::allocate(const size_t& size)
 {
+    std::cout << "need: " << size << std::endl;
     if (size > _4GB) { return NULL; } // What could you possibly be doing? :|
     if (size > _64KB) // Is bigger than a "normal" alloc, so we need to do some special work
     {

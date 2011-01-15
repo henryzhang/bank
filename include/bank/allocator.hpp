@@ -4,6 +4,7 @@
 /* Used for the C++ STL Types */
 
 #include <limits>
+#include <new>
 
 #include <cstdlib>
 
@@ -35,10 +36,10 @@ class allocator
 
         inline void construct(pointer ptr, const_reference value)
         {
-            ::operator new(static_cast<void*>(ptr)) value_type(value);
+            new(static_cast<void*>(ptr)) value_type(value);
         }
 
-        inline void construct(pointer ptr) { ::operator new(static_cast<void*>(ptr)) value_type(); }
+        inline void construct(pointer ptr) { new(static_cast<void*>(ptr)) value_type(); }
         inline void destroy(pointer ptr) { ptr->~value_type(); }
 
         inline const_pointer address(const_reference ref) const { return &ref; }

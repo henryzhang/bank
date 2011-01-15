@@ -7,19 +7,6 @@
 
 #include <iostream>
 
-namespace {
-
-struct deallocator
-{
-    typedef bank::detail::chunk chunk;
-    inline explicit deallocator(void) : address(0) { }
-    inline void operator ()(chunk& item) { item.deallocate(this->address); }
-    inline void operator =(const size_t& address) { this->address = address; }
-    size_t address;
-};
-
-} /* namespace */
-
 namespace bank {
 namespace detail {
 
@@ -53,7 +40,6 @@ void* collector::operator new(size_t size) { return std::malloc(size); }
 void collector::run(void* actual)
 {
     collector* self = static_cast<collector*>(actual);
-    deallocator functor;
     self->started = true;
     std::cout << "collector thread is now running" << std::endl;
 
@@ -63,8 +49,16 @@ void collector::run(void* actual)
         while(self->objects.empty() && !self->destruct) { thread::yield(); }
         while(!self->objects.empty())
         {
-            functor = self->objects.pop();
-            for (size_t idx = 0; idx < self->memory.get_size(); idx++) { functor(self->memory.at(idx)); }
+            size_t address = self->objects.pop();
+            if (address == 0) { continue; } // may contain a false postive. Will be looking into it.
+            //TODO: change the interface to use the pool's size as a max reader
+            //      also look into changing the loop to check if the address is in the chunk, then deallocate
+            //      This will us the overloaded operators, and simply the number of instructions in the
+            //      chunk::deallocate function.
+            for (size_t idx = 0; idx < self->memory.get_size(); idx++)
+            {
+                self->memory.at(idx).deallocate(address);
+            }
         }
     }
 }

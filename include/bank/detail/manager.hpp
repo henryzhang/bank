@@ -9,6 +9,7 @@ extern void* alloc(size_t);
 extern void free(void*);
 
 extern void open(size_t);
+extern void close(void);
 
 namespace detail {
 
@@ -35,6 +36,7 @@ class manager
         friend void bank::free(void*);
 
         friend void bank::open(size_t);
+        friend void bank::close(void);
 
         collector* waste;
         pool* memory;

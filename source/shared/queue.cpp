@@ -35,10 +35,10 @@ size_t queue::size(void) const
 
 void queue::push(size_t address)
 {
-    if (this->empty()) { *this->last = address; return; }
     if ((++this->last) == this->first) { /* we're about to start overwriting the queue. What do we do? :/ */ }
     if (this->last > this->end) { this->last = this->start; }
     *this->last = address;
+    ++this->last;
 }
 
 size_t queue::pop(void)
