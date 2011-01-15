@@ -17,11 +17,13 @@ class chunk
         void deallocate(const size_t& address);
         void* allocate(const size_t& address);
 
-        bool decouple(const chunk& other);
-        bool combine(const chunk& other);
+        void decouple(const chunk& other);
+        void combine(const chunk& other);
 
-        void set(const size_t& address, const size_t& size);
+        bool next_to(const chunk& right) const;
         bool has(const size_t& address) const;
+
+        void set(const size_t& address);
 
         bool is_combined(void) const;
         bool is_free(void) const;

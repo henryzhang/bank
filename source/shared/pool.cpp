@@ -29,35 +29,22 @@ inline size_t max_allocs(void)
     return allocs;
 }
 
-struct setter
+inline size_t find_single(bank::detail::array& range, const size_t& size)
 {
-    typedef bank::detail::chunk chunk;
-    inline explicit setter(void* buffer) : address(reinterpret_cast<size_t>(buffer)) { }
-    inline void operator ()(chunk& item) { item.set(this->address, _64KB); this->address += (_64KB + 1); }
-    size_t address;
-};
-
-struct combiner
-{
-    typedef bank::detail::chunk chunk;
-    inline explicit combiner(chunk& chk) : chk(chk) { }
-    inline void operator ()(chunk& item) { this->chk.combine(item); }
-    chunk& chk;
-};
-
-size_t find_single(bank::detail::array& range)
-{
-    for (size_t idx = 0; idx < range.get_size(); ++idx) { if (range.at(idx).is_free()) { return idx; } }
-    return max_chunks + 1;
+    for (size_t idx = 0; idx < size; ++idx) { if (range.at(idx).is_free()) { return idx; } }
+    return max_chunks() + 1;
 }
 
-size_t find_range(bank::detail::array& range, const size_t& count)
+inline size_t find_range(bank::detail::array& range, const size_t& size, const size_t& count)
 {
     size_t index, current = 0;
-    
-    for (size_t idx = 0; idx < range.get_size(); ++idx)
+
+    for (size_t idx = 0; idx < size; ++idx)
     {
-        range.at(idx).is_free() ? ++current : current = 0;
+        bank::detail::chunk& ref = range.at(idx);
+//TODO: Fix to make sure we can actually combine all of these.
+//if (ref.next_to(range.at(idx + 1)) && ref.is_free())
+//          && ref.next_to(range.at(idx + 1)) ? ++current : current = 0;
         if (current == 0) { ++index; }
         if (current == count) { return index; }
     }
@@ -75,8 +62,12 @@ pool::pool(const size_t& chunks) throw(error) : allocs(max_allocs()), list(max_c
     if (chunks > max_chunks()) { throw error("Requested number of chunks is larger than system maximum"); }
     void* buffer = std::malloc(chunks * _64KB);
     if (buffer == NULL) { throw error("Could not allocate initial memory chunks in pool"); }
-    setter functor(buffer);
-    for (size_t idx = 0; idx < chunks; ++idx) { functor(this->list.at(idx)); }
+    size_t address = reinterpret_cast<size_t>(buffer);
+    for (size_t idx = 0; idx < chunks; ++idx)
+    {
+        this->list.at(idx).set(address);
+        address += (_64KB + 1);
+    }
 }
 
 pool::~pool(void) { }
@@ -111,43 +102,39 @@ void* pool::operator new(size_t size) { return std::malloc(size); }
  * This is the largest function in the entire library.
  */
 
+// If there were any optimizations to be done, many would probably go here. :/
 void* pool::allocate(const size_t& size)
 {
-    if (size > _64KB) // Is bigger than a normal alloc, so we need to do some special work
+    if (size > _64KB) // Is bigger than a "normal" alloc, so we need to do some special work
     {
-        //TODO: Find set of chunks who are next to each other and meet the size requirement
-
-        size_t required_chunks = (size / _64KB);
-        size_t found_index = find_range(this->list, required_chunks);
-        if (found_index == max_chunks() + 1)
+        size_t required_chunks = (size / _64KB) + 1;
+        this->index = find_range(this->list, this->size, required_chunks);
+        if (this->index == max_chunks() + 1)
         {
-            // We did not find it. Keep moving.
-        }
+            if (required_chunks < 10) { required_chunks = 10; }
+            else
+            {
+                size_t multiple = 0;
+                do { required_chunks -= 10; ++multiple; } while (required_chunks > 10);
+                ++multiple;
+                required_chunks = multiple * 10;
+            }
 
-        if (required_chunks < 10) { required_chunks = 10; }
-        else
-        {
-            size_t multiple = 0;
-            do { required_chunks -= 10; ++multiple; } while (required_chunks > 10);
-            ++multiple;
-            required_chunks = multiple * 10;
-        }
-
-        if ((this->size - this->index) > required_chunks)
-        {
             void* buffer = std::malloc(required_chunks * _64KB);
-            if (buffer == NULL) { throw bank::error("Could not allocate and set memory chunks"); }
+            if (buffer == NULL) { throw error("Could not allocate and set new memory chunks"); }
             this->allocs.push(buffer);
 
-            setter functor(buffer);
+            size_t address = reinterpret_cast<size_t>(buffer);
             for (this->index = this->size; this->size < required_chunks; ++this->size)
             {
-                functor(this->list.at(this->size));
+                this->list.at(this->size).set(address);
+                address += (_64KB + 1);
             }
         }
 
-        size_t idx = this->index;
-        for (combiner functor(this->list.at(idx)); idx < this->size; ++idx) { functor(this->list.at(idx)); }
+        chunk& combined = this->list.at(this->index);
+        for (size_t idx = this->index; idx < required_chunks; ++idx) { combined.combine(this->list.at(idx)); }
+        return combined.allocate(size); // If this is ever null, we done boned it up :/
     }
 
     void* buffer = this->list.at(this->index).allocate(size);
@@ -156,11 +143,20 @@ void* pool::allocate(const size_t& size)
         if (this->index + 1 >= this->size || !this->list.at(this->index + 1).is_free())
         {
             size_t idx = this->index;
-            //const iterator& end = this->list.begin() + this->size;
-            //synk::parallel_for_each(this->list.begin(), end, ::chunk::finder(idx, this->list.begin()));
-            /* If the index has not changed at all, then we need to allocate 10 new chunks */
-            //if (this->index == idx) { idx = allocate_with_set(this->list, 10, this->size); }
-            this->index = idx; // Update the current index
+            this->index = find_single(this->list, this->size);
+            if (this->index == max_chunks() + 1)
+            {
+                void* buffer = std::malloc(10 * _64KB); // 640KB should be all that anyone ever needs
+                if (buffer == NULL) { throw error("Could not allocate and set new memory chunks"); }
+                this->allocs.push(buffer);
+
+                size_t address = reinterpret_cast<size_t>(buffer);
+                for (this->index = this->size; this->size != (this->size + 11); ++this->size)
+                {
+                    this->list.at(this->size).set(address);
+                    address += (_64KB + 1);
+                }
+            }
             return this->list.at(this->index).allocate(size);
         }
         else { return this->list.at((++this->index)).allocate(size); }

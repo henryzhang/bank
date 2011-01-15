@@ -38,36 +38,37 @@ void chunk::deallocate(const size_t& address)
     }
 }
 
-bool chunk::decouple(const chunk& other)
+void chunk::decouple(const chunk& other)
 {
     if (this->end == other.end)
     {
         const_cast<chunk&>(other).combined = false;
         this->end = other.start - 1;
         if (this->get_size() == _64KB) { this->combined = false; }
-        return true;
     }
-    return false;
 }
 
-bool chunk::combine(const chunk& other)
+void chunk::combine(const chunk& other)
 {
     if ((this->end + 1 == other.start) && (other.next == 0) && (other.allocated == 0))
     {
         this->end = other.end;
         this->combined = const_cast<chunk&>(other).combined = true;
-        return true;
     }
-    return false;
 }
 
-void chunk::set(const size_t& address, const size_t& size)
+bool chunk::next_to(const chunk& other) const
 {
-    this->start = address;
-    this->end = this->start + size;
+    return (this->start - 1) == other.end || (this->end + 1) == other.start;
 }
 
 bool chunk::has(const size_t& address) const { return address > this->start && address < this->end; }
+
+void chunk::set(const size_t& address)
+{
+    this->start = address;
+    this->end = this->start + _64KB;
+}
 
 bool chunk::is_combined(void) const { return this->combined; }
 bool chunk::is_free(void) const { return this->allocated == 0; }
