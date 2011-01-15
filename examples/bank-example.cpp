@@ -1,8 +1,6 @@
 #include <bank/object.hpp>
 #include <bank/bank.hpp>
 
-#include <synk/utility.hpp>
-
 #include <iostream>
 
 struct object : public bank::object
