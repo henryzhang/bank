@@ -4,6 +4,7 @@
 #include <sys/sysctl.h>
 #include <unistd.h>
 
+#include <iostream>
 
 namespace bank {
 namespace detail {

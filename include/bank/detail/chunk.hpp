@@ -17,8 +17,8 @@ class chunk
         void deallocate(const size_t& address);
         void* allocate(const size_t& address);
 
-        void decouple(const chunk& other);
-        void combine(const chunk& other);
+        bool decouple(const chunk& other);
+        bool combine(const chunk& other);
 
         void set(const size_t& address, const size_t& size);
         bool has(const size_t& address) const;

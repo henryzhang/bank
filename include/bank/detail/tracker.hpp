@@ -14,16 +14,15 @@ namespace detail {
 
 class tracker
 {
-        typedef void* buffer;
     public:
-        explicit tracker(void) throw(error);
+        explicit tracker(const size_t& size) throw(error);
         virtual ~tracker(void);
 
-        void push(buffer pointer);
+        void push(void* pointer);
 
     private:
         size_t index;
-        buffer* start;
+        size_t* start;
 };
 
 }} /* namespace bank::detail */

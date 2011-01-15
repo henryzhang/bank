@@ -26,8 +26,8 @@ class queue
         bool full(void) const;
 
     private:
-        size_t const* start; // Points to the true start of the memory buffer
-        size_t const* end;   // Points to the true end of the memory buffer
+        size_t* start; // Points to the true start of the memory buffer
+        size_t* end;   // Points to the true end of the memory buffer
 
         size_t volatile* first; // The "true" start of the queue
         size_t volatile* last;  // The "true" end of the queue

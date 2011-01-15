@@ -8,6 +8,7 @@
 #include <cstdlib>
 
 #include <pthread.h>
+#include <limits.h>
 #include <errno.h>
 
 #if defined(BANK_GENBSD_PLATFORM)

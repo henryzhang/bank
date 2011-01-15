@@ -14,17 +14,19 @@ namespace {
 
 const bank::uint32_t _64KB = std::numeric_limits<bank::uint16_t>::max() + 1;
 
-inline size_t max_chunks(void) { return bank::detail::get_memory_size() / _64KB; }
-
-/* Returns the amount of memory to use to track the chunks -- in bytes.
- * Technically it is a bit more than should it be, but this is done "just in case"
- * If you want to get those few extra kilobytes back, this is where you should change the algorithm
+/* maximum number of chunks, followed by the number of times the pool can allocate from the system
+ * These values are memoized at runtime, to save any future calls to them, at the expense of some memory.
+ * In my opinion it is better to store the variable in memory, than to make the system calls every time.
  */
-inline size_t allocate_with_set(bank::detail::array& list, size_t start, size_t size)
+inline size_t max_chunks(void)
 {
-    void* buffer = std::malloc(size * _64KB);
-    if (buffer == NULL) { throw bank::error("Could not allocate and set memory chunks"); }
-//    for_each();
+    static const size_t chunks = bank::detail::get_memory_size() / _64KB;
+    return chunks;
+}
+inline size_t max_allocs(void)
+{
+    static const size_t allocs = (max_chunks() - 256) / 10 + 1;
+    return allocs;
 }
 
 struct setter
@@ -43,35 +45,41 @@ struct combiner
     chunk& chk;
 };
 
-struct finder
+size_t find_single(bank::detail::array& range)
 {
-    typedef bank::detail::chunk chunk;
-    inline explicit finder(size_t& index) : index(index), found(false) { }
-    inline void operator ()(chunk& item)
+    for (size_t idx = 0; idx < range.get_size(); ++idx) { if (range.at(idx).is_free()) { return idx; } }
+    return max_chunks + 1;
+}
+
+size_t find_range(bank::detail::array& range, const size_t& count)
+{
+    size_t index, current = 0;
+    
+    for (size_t idx = 0; idx < range.get_size(); ++idx)
     {
-        if (found) { return; }
-        if (item.is_free()) { this->found = true; return; }
-        ++this->index;
+        range.at(idx).is_free() ? ++current : current = 0;
+        if (current == 0) { ++index; }
+        if (current == count) { return index; }
     }
-    size_t& index;
-    bool found;
-};
+
+    return max_chunks() + 1;
+}
 
 } /* namespace */
 
 namespace bank {
 namespace detail {
 
-pool::pool(const size_t& chunks) throw(error) : list(max_chunks()), index(0), size(chunks)
+pool::pool(const size_t& chunks) throw(error) : allocs(max_allocs()), list(max_chunks()), index(0), size(chunks)
 {
-    std::cout << "in pool ctor" << std::endl;
     if (chunks > max_chunks()) { throw error("Requested number of chunks is larger than system maximum"); }
     void* buffer = std::malloc(chunks * _64KB);
     if (buffer == NULL) { throw error("Could not allocate initial memory chunks in pool"); }
-    for_each(this->list, chunks, setter(buffer));
+    setter functor(buffer);
+    for (size_t idx = 0; idx < chunks; ++idx) { functor(this->list.at(idx)); }
 }
 
-pool::~pool(void) { while (!this->allocs.empty()) { std::free(reinterpret_cast<void*>(this->allocs.pop())); } }
+pool::~pool(void) { }
 
 void pool::operator delete(void* pointer) { std::free(pointer); pointer = NULL; }
 void* pool::operator new(size_t size) { return std::malloc(size); }
@@ -100,40 +108,60 @@ void* pool::operator new(size_t size) { return std::malloc(size); }
  * synk::parallel_for_each function, though this may cause a slowdown for systems with small amounts of memory
  * 
  * Effectively, when it comes to allocating memory, this is where the magic happens :)
- * I'm also fairly certain this is the largest function in the entire library.
+ * This is the largest function in the entire library.
  */
 
 void* pool::allocate(const size_t& size)
 {
-    if (size > _64KB)
+    if (size > _64KB) // Is bigger than a normal alloc, so we need to do some special work
     {
-        size_t idx = this->index;
-        if ((this->size - this->index) * _64KB < size)
+        //TODO: Find set of chunks who are next to each other and meet the size requirement
+
+        size_t required_chunks = (size / _64KB);
+        size_t found_index = find_range(this->list, required_chunks);
+        if (found_index == max_chunks() + 1)
         {
-            idx = alloc_and_set(this->size, size / _64KB + 1, this->list);
+            // We did not find it. Keep moving.
         }
-        iterator start = this->list.begin();
-        std::advance(start, idx + 1);
 
-        iterator end = this->list.begin();
-        std::advance(end, this->size);
+        if (required_chunks < 10) { required_chunks = 10; }
+        else
+        {
+            size_t multiple = 0;
+            do { required_chunks -= 10; ++multiple; } while (required_chunks > 10);
+            ++multiple;
+            required_chunks = multiple * 10;
+        }
 
-        std::for_each(start, end, ::chunk::combiner(this->list.at(idx)));
-        return this->list.at(idx).allocate(size);
+        if ((this->size - this->index) > required_chunks)
+        {
+            void* buffer = std::malloc(required_chunks * _64KB);
+            if (buffer == NULL) { throw bank::error("Could not allocate and set memory chunks"); }
+            this->allocs.push(buffer);
+
+            setter functor(buffer);
+            for (this->index = this->size; this->size < required_chunks; ++this->size)
+            {
+                functor(this->list.at(this->size));
+            }
+        }
+
+        size_t idx = this->index;
+        for (combiner functor(this->list.at(idx)); idx < this->size; ++idx) { functor(this->list.at(idx)); }
     }
 
-    void* buffer = this->get_current().allocate(size);
+    void* buffer = this->list.at(this->index).allocate(size);
     if (buffer == NULL)
     {
         if (this->index + 1 >= this->size || !this->list.at(this->index + 1).is_free())
         {
             size_t idx = this->index;
-            const iterator& end = this->list.begin() + this->size;
-            synk::parallel_for_each(this->list.begin(), end, ::chunk::finder(idx, this->list.begin()));
-            * If the index has not changed at all, then we need to allocate 10 new chunks *
-            if (this->index == idx) { idx = alloc_and_set(this->size, 10, this->list); }
+            //const iterator& end = this->list.begin() + this->size;
+            //synk::parallel_for_each(this->list.begin(), end, ::chunk::finder(idx, this->list.begin()));
+            /* If the index has not changed at all, then we need to allocate 10 new chunks */
+            //if (this->index == idx) { idx = allocate_with_set(this->list, 10, this->size); }
             this->index = idx; // Update the current index
-            return this->get_current().allocate(size);
+            return this->list.at(this->index).allocate(size);
         }
         else { return this->list.at((++this->index)).allocate(size); }
     }

@@ -5,6 +5,8 @@
 
 #include <cstdlib>
 
+namespace { const bank::uint32_t _64KB = std::numeric_limits<uint16_t>::max() + 1; } /* namespace  */
+
 namespace bank {
 namespace detail {
 
@@ -24,15 +26,39 @@ void chunk::deallocate(const size_t& address)
     if (this->allocated == 0) { return; }
     if (this->has(address)) { --this->allocated; }
     if (this->allocated == 0) { this->next = 0; }
+    if ((this->get_size() > _64KB) && (this->next == 0))
+    {
+        uint32_t length = this->get_size() / _64KB;
+        while (this->combined)
+        {
+            chunk& other = *(this + length);
+            this->decouple(other);
+            --length;
+        }
+    }
 }
 
-void chunk::combine(const chunk& other)
+bool chunk::decouple(const chunk& other)
+{
+    if (this->end == other.end)
+    {
+        const_cast<chunk&>(other).combined = false;
+        this->end = other.start - 1;
+        if (this->get_size() == _64KB) { this->combined = false; }
+        return true;
+    }
+    return false;
+}
+
+bool chunk::combine(const chunk& other)
 {
     if ((this->end + 1 == other.start) && (other.next == 0) && (other.allocated == 0))
     {
         this->end = other.end;
         this->combined = const_cast<chunk&>(other).combined = true;
+        return true;
     }
+    return false;
 }
 
 void chunk::set(const size_t& address, const size_t& size)

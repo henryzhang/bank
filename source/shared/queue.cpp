@@ -13,17 +13,17 @@ queue::queue(void) throw(error) : start(NULL), end(NULL), first(NULL), last(NULL
 {
     void* buffer = std::malloc(std::numeric_limits<uint16_t>::max() + 1);
     if (buffer == NULL) { throw error("Could not allocate memory for removal queue"); }
-    const_cast<size_t*>(this->start) = static_cast<size_t*>(buffer);
+    this->start = static_cast<size_t*>(buffer);
     this->last = this->first = this->start;
-    const_cast<size_t*>(this->end) = this->start + std::numeric_limits<uint16_t>::max() + 1;
+    this->end = this->start + std::numeric_limits<uint16_t>::max() + 1;
 }
 
 queue::~queue(void)
 {
     if (this->start)
     {
-        std::free(static_cast<void*>(const_cast<size_t*>(this->start)));
-        const_cast<size_t*>(this->start) = const_cast<size_t*>(this->end) = this->first = this->last = NULL;
+        std::free(static_cast<void*>(this->start));
+        this->first = this->last = this->start = this->end = NULL;
     }
 }
 

@@ -6,10 +6,6 @@
 namespace bank {
 namespace detail {
 
-class callable;
-class array;
-
-void for_each(array& start, size_t end, callable& functor);
 size_t get_memory_size(void);
 
 }} /* namespace bank::detail */
