@@ -1,5 +1,7 @@
 #include <bank/detail/utility.hpp>
 
+#include <Windows.h>
+
 namespace bank {
 namespace detail {
 

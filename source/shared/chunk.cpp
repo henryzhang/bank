@@ -13,6 +13,7 @@ namespace detail {
 chunk::chunk(void) : start(0), end(0), allocated(0), next(0), combined(false) { }
 chunk::~chunk(void) { }
 
+#pragma warning(disable: 4267)
 void* chunk::allocate(const size_t& size)
 {
     if (this->start + this->next + size > this->end) { return NULL; }
@@ -20,6 +21,7 @@ void* chunk::allocate(const size_t& size)
     this->next += size;
     return reinterpret_cast<void*>(this->start + this->next - size);
 }
+#pragma warning(default: 4267)
 
 void chunk::deallocate(const size_t& address)
 {
@@ -73,7 +75,9 @@ void chunk::set(const size_t& address)
 bool chunk::is_combined(void) const { return this->combined; }
 bool chunk::is_free(void) const { return this->allocated == 0; }
 
+#pragma warning(disable: 4267)
 uint32_t chunk::get_size(void) const { return this->end - this->start; }
+#pragma warning(default: 4267)
 
 bool chunk::operator ==(const chunk& right) const { return this->start == right.start; }
 bool chunk::operator !=(const chunk& right) const { return this->start != right.start; }

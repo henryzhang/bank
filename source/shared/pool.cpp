@@ -37,7 +37,8 @@ inline size_t find_single(bank::detail::array& range, const size_t& size)
 
 inline size_t find_range(bank::detail::array& range, const size_t& size, const size_t& count)
 {
-    size_t index, current = 0;
+    size_t index = 0;
+    size_t current = 0;
 
     for (size_t idx = 0; idx < size; ++idx)
     {

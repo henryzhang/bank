@@ -23,11 +23,14 @@ struct deallocator
 namespace bank {
 namespace detail {
 
+
+#pragma warning(disable: 4355)
 collector::collector(array& memory) : scanner(&collector::run, this), memory(memory), destruct(0), started(0)
 {
     this->scanner.start();
     while (!this->started) { thread::yield(); }
 }
+#pragma warning(default: 4355)
 
 collector::~collector(void)
 {
