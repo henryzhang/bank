@@ -11,7 +11,7 @@ namespace detail {
 
 queue::queue(void) throw(error) : start(NULL), end(NULL), first(NULL), last(NULL)
 {
-    void* buffer = std::malloc(std::numeric_limits<uint16_t>::max() + 1);
+    void* buffer = std::calloc(1, std::numeric_limits<uint16_t>::max() + 1);
     if (buffer == NULL) { throw error("Could not allocate memory for removal queue"); }
     this->start = static_cast<size_t*>(buffer);
     this->last = this->first = this->start;

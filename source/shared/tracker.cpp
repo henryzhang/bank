@@ -28,8 +28,10 @@ tracker::~tracker(void)
         std::free(buffer);
         --this->index;
     } while (this->index > 0);
+    void* buffer = reinterpret_cast<void*>(this->start[0]);
+    if (buffer != NULL) { std::free(buffer); }
     std::cout << "Loop finished!" << std::endl;
-    //if (this->start) { std::free(this->start); }
+    if (this->start) { std::free(this->start); }
 }
 
 void tracker::push(void* pointer) { std::cout << "tracker pushed: " << pointer << std::endl; this->start[index] = reinterpret_cast<size_t>(pointer); ++this->index; }

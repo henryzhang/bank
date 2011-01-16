@@ -62,7 +62,7 @@ namespace detail {
 pool::pool(const size_t& chunks) throw(error) : allocs(max_allocs()), list(max_chunks()), index(0), size(chunks)
 {
     if (chunks > max_chunks()) { throw error("Requested number of chunks is larger than system maximum"); }
-    void* buffer = std::malloc(chunks * _64KB);
+    void* buffer = std::calloc(chunks, _64KB);
     if (buffer == NULL) { throw error("Could not allocate initial memory chunks in pool"); }
     size_t address = reinterpret_cast<size_t>(buffer);
     for (size_t idx = 0; idx < chunks; ++idx)
