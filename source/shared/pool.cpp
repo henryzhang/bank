@@ -75,14 +75,7 @@ void* pool::allocate(const size_t& size)
         {
             size_t required_chunks = (size / _64KB);
             if (required_chunks < 10) { required_chunks = 10; }
-            else
-            {
-                // I *could* divide, I suppose, but I'll leave it for now, if we ever need to wildly deviate.
-                size_t multiple = 0;
-                do { required_chunks -= 10; ++multiple; } while (required_chunks > 10);
-                ++multiple;
-                required_chunks = multiple * 10; // Might be optimizable by bit shifting 3 and 1 and adding them. We'll trust the compiler for now.
-            }
+            else { required_chunks = ((required_chunks / 10) + 1) * 10; } // can be optimized with bit shifts
 
             void* buffer = std::calloc(required_chunks, _64KB); // Allocate in multiples of 10
             if (buffer == NULL) { throw error("Could not allocate and set new memory chunks"); }
