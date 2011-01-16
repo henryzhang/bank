@@ -1,3 +1,4 @@
+#include <bank/detail/thread.hpp>
 #include <bank/detail/queue.hpp>
 #include <bank/detail/types.hpp>
 #include <bank/error.hpp>
@@ -35,7 +36,7 @@ size_t queue::size(void) const
 
 void queue::push(size_t address)
 {
-    if ((++this->last) == this->first) { /* we're about to start overwriting the queue. What do we do? :/ */ }
+    if ((++this->last) == this->first) { thread::yield(); } /* We are about to overwrite the queue, so we yield to give the collector more time */
     if (this->last > this->end) { this->last = this->start; }
     *this->last = address;
     ++this->last;
