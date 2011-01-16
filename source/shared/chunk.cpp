@@ -53,7 +53,6 @@ bool chunk::is_free(const size_t& size) const
 {
     return this->allocated == 0 || (this->start + this->next + size) <= this->end;
 }
-bool chunk::is_free(void) const { return this->allocated == 0; }
 
 #pragma warning(disable: 4267)
 uint32_t chunk::get_size(void) const { return this->end - this->start; }

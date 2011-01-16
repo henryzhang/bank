@@ -24,7 +24,6 @@ class chunk
 
         bool is_combined(void) const;
         bool is_free(const size_t& size) const;
-        bool is_free(void) const; //TODO: Is this necessary?
 
         uint32_t get_size(void) const;
 

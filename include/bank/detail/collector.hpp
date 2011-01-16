@@ -9,12 +9,12 @@
 namespace bank {
 namespace detail {
 
-class array;
+class pool;
 
 class collector
 {
     public:
-        explicit collector(array& memory);
+        explicit collector(pool& memory);
         virtual ~collector(void);
 
         void remove(const size_t& address);
@@ -28,7 +28,8 @@ class collector
 
         thread scanner;
         queue objects;
-        array& memory;
+        pool& memory;
+
         bool destruct;
         bool started;
 };

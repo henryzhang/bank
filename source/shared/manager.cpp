@@ -16,7 +16,7 @@ void manager::initialize(const size_t& chunks)
     if (this->initialized) { return; }
 
     this->memory = new pool(chunks);
-    this->waste = new collector(this->memory->list);
+    this->waste = new collector(*this->memory);
     this->initialized = true;
 }
 

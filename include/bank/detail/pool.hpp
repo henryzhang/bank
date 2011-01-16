@@ -27,6 +27,7 @@ class pool
     private:
         explicit pool(const pool& copy);
 
+        friend class collector;
         friend class manager;
 
         tracker allocs;

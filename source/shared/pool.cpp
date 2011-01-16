@@ -8,7 +8,6 @@
 #include <limits>
 
 #include <cstdlib>
-#include <iostream>
 
 namespace {
 
@@ -34,23 +33,6 @@ inline size_t max_allocs(void)
 inline size_t find_single(bank::detail::array& range, const size_t& end, const size_t& size)
 {
     for (size_t idx = 0; idx < end; ++idx) { if (range.at(idx).is_free(size)) { return idx; } }
-    return max_chunks() + 1;
-}
-
-inline size_t find_range(bank::detail::array& range, const size_t& size, const size_t& count)
-{
-    size_t index = 0;
-    size_t current = 0;
-    //TODO: Needs better logic flow -- DESPERATELY
-    for (size_t idx = 0; idx < size; ++idx)
-    {
-        bank::detail::chunk& ref = range.at(idx);
-        if (ref.is_free()) { ++current; } else { current = 0; }
-        //if (!ref.next_to(range.at(idx + 1)) && current != count) { current = 0; }
-        if (current == count) { return index; }
-        if (current == 0) { ++index; }
-    }
-
     return max_chunks() + 1;
 }
 
@@ -85,11 +67,9 @@ void* pool::operator new(size_t size) { return std::malloc(size); }
 // If there were any optimizations to be done, many would probably go here. :/
 void* pool::allocate(const size_t& size)
 {
-    std::cout << "need: " << size << std::endl;
     if (size > _4GB) { return NULL; } // What could you possibly be doing? Enjoy your NULL pointer.
     if (size >= _64KB) // Is bigger than a "normal" alloc, so we need to do some special work
     {
-        std::cout << "pretty big chunk you got there..." << " sssssssssssssss" << std::endl;
         this->index = find_single(this->list, this->size, size);
         if (this->index == max_chunks() + 1)
         {
