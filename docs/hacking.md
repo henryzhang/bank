@@ -50,4 +50,9 @@ ordered CPU (such as PowerPC), that a memory barrier, or atomic integral type is
 the variable modifier `volatile` within the source code. Specifically, these are located in the `bank::queue`
 and consist of a `size_t*` (that is, the pointer is volatile, not what it points to).  
 
+Checking for Null
+-----------------
 
+Throughout Bank, there are checks to see if a `void*` is `NULL` or not. This was done to show intent, and to
+allow newbies to better understand what is happening where (Think explicit over implicit). It is safe to
+change these if you so wish.
