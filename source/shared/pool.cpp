@@ -31,9 +31,9 @@ inline size_t max_allocs(void)
     return allocs;
 }
 
-inline size_t find_single(bank::detail::array& range, const size_t& size)
+inline size_t find_single(bank::detail::array& range, const size_t& end, const size_t& size)
 {
-    for (size_t idx = 0; idx < size; ++idx) { if (range.at(idx).is_free()) { return idx; } }
+    for (size_t idx = 0; idx < end; ++idx) { if (range.at(idx).is_free(size)) { return idx; } }
     return max_chunks() + 1;
 }
 
@@ -46,7 +46,7 @@ inline size_t find_range(bank::detail::array& range, const size_t& size, const s
     {
         bank::detail::chunk& ref = range.at(idx);
         if (ref.is_free()) { ++current; } else { current = 0; }
-        if (!ref.next_to(range.at(idx + 1)) && current != count) { current = 0; }
+        //if (!ref.next_to(range.at(idx + 1)) && current != count) { current = 0; }
         if (current == count) { return index; }
         if (current == 0) { ++index; }
     }
@@ -86,23 +86,25 @@ void* pool::operator new(size_t size) { return std::malloc(size); }
 void* pool::allocate(const size_t& size)
 {
     std::cout << "need: " << size << std::endl;
-    if (size > _4GB) { return NULL; } // What could you possibly be doing? :|
-    if (size > _64KB) // Is bigger than a "normal" alloc, so we need to do some special work
+    if (size > _4GB) { return NULL; } // What could you possibly be doing? Enjoy your NULL pointer.
+    if (size >= _64KB) // Is bigger than a "normal" alloc, so we need to do some special work
     {
-        size_t required_chunks = (size / _64KB) + 1;
-        this->index = find_range(this->list, this->size, required_chunks);
+        std::cout << "pretty big chunk you got there..." << " sssssssssssssss" << std::endl;
+        this->index = find_single(this->list, this->size, size);
         if (this->index == max_chunks() + 1)
         {
+            size_t required_chunks = (size / _64KB);
             if (required_chunks < 10) { required_chunks = 10; }
             else
             {
+                // I *could* divide, I suppose, but I'll leave it for now, if we ever need to wildly deviate.
                 size_t multiple = 0;
                 do { required_chunks -= 10; ++multiple; } while (required_chunks > 10);
                 ++multiple;
-                required_chunks = multiple * 10;
+                required_chunks = multiple * 10; // Might be optimizable by bit shifting 3 and 1 and adding them. We'll trust the compiler for now.
             }
 
-            void* buffer = std::malloc(required_chunks * _64KB);
+            void* buffer = std::calloc(required_chunks, _64KB); // Allocate in multiples of 10
             if (buffer == NULL) { throw error("Could not allocate and set new memory chunks"); }
             this->allocs.push(buffer);
 
@@ -112,22 +114,22 @@ void* pool::allocate(const size_t& size)
                 this->list.at(this->size).set(address);
                 address += (_64KB + 1);
             }
-        }
 
-        chunk& combined = this->list.at(this->index);
-        for (size_t idx = this->index; idx < required_chunks; ++idx) { combined.combine(this->list.at(idx)); }
-        return combined.allocate(size); // If this is ever null, we done boned it up :/
+            chunk& combined = this->list.at(this->index);
+            for (size_t idx = this->index; idx < required_chunks; ++idx) { combined.combine(this->list.at(idx)); }
+            return combined.allocate(size); // If this is ever null, we done boned it up :/
+        }
     }
 
     void* buffer = this->list.at(this->index).allocate(size);
     if (buffer == NULL)
     {
-        if (this->index + 1 >= this->size || !this->list.at(this->index + 1).is_free())
+        if (this->index + 1 > this->size || !this->list.at(this->index + 1).is_free(size))
         {
-            this->index = find_single(this->list, this->size);
+            this->index = find_single(this->list, this->size, size);
             if (this->index == max_chunks() + 1)
             {
-                void* buffer = std::malloc(10 * _64KB); // 640KB should be all that anyone ever needs
+                void* buffer = std::calloc(10, _64KB); // 640KB ought to be enough for anybody
                 if (buffer == NULL) { throw error("Could not allocate and set new memory chunks"); }
                 this->allocs.push(buffer);
 
@@ -144,6 +146,5 @@ void* pool::allocate(const size_t& size)
     }
     return buffer;
 }
-
 
 }} /* namespace bank::detail */

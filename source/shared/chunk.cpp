@@ -28,26 +28,6 @@ void chunk::deallocate(const size_t& address)
 {
     if (this->has(address)) { --this->allocated; }
     if (this->allocated == 0) { this->next = 0; }
-    if ((this->get_size() > _64KB) && (this->next == 0))
-    {
-        uint32_t length = this->get_size() / _64KB;
-        while (this->combined)
-        {
-            chunk& other = *(this + length);
-            this->decouple(other);
-            --length;
-        }
-    }
-}
-
-void chunk::decouple(const chunk& other)
-{
-    if (this->end == other.end)
-    {
-        const_cast<chunk&>(other).combined = false;
-        this->end = other.start - 1;
-        if (this->get_size() == _64KB) { this->combined = false; }
-    }
 }
 
 void chunk::combine(const chunk& other)
@@ -59,11 +39,6 @@ void chunk::combine(const chunk& other)
     }
 }
 
-bool chunk::next_to(const chunk& other) const
-{
-    return (this->start - 1) == other.end || (this->end + 1) == other.start;
-}
-
 bool chunk::has(const size_t& address) const { return address > this->start && address < this->end; }
 
 void chunk::set(const size_t& address)
@@ -73,6 +48,11 @@ void chunk::set(const size_t& address)
 }
 
 bool chunk::is_combined(void) const { return this->combined; }
+
+bool chunk::is_free(const size_t& size) const
+{
+    return this->allocated == 0 || (this->start + this->next + size) <= this->end;
+}
 bool chunk::is_free(void) const { return this->allocated == 0; }
 
 #pragma warning(disable: 4267)

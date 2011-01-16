@@ -25,7 +25,7 @@ int main(void)
 {
     std::cout << "Press Enter to start..." << std::hex << std::showbase << std::endl;
     std::cin.get();
-    bank::open(5);
+    bank::open(1);
     std::cout << "new" << std::endl;
     object* x = new object();
     func();
