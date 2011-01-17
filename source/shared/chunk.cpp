@@ -5,6 +5,7 @@
 
 #include <cstdlib>
 
+
 namespace { const bank::uint32_t _64KB = std::numeric_limits<uint16_t>::max() + 1; } /* namespace  */
 
 namespace bank {
@@ -48,11 +49,7 @@ void chunk::set(const size_t& address, size_t length)
 }
 
 bool chunk::is_combined(void) const { return this->combined; }
-
-bool chunk::is_free(const size_t& size) const
-{
-    return this->allocated == 0 || (this->start + this->next + size) <= this->end;
-}
+bool chunk::is_free(const size_t& size) const { return this->end - (this->start + this->next) >= size; }
 
 #pragma warning(disable: 4267)
 uint32_t chunk::get_size(void) const { return this->end - this->start; }

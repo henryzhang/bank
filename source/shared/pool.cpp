@@ -68,28 +68,25 @@ void* pool::operator new(size_t size) { return std::malloc(size); }
 void* pool::allocate(const size_t& size)
 {
     if (size > _4GB) { return NULL; } // What could you possibly be doing? Enjoy your NULL pointer.
-    if (size >= _64KB) // Is bigger than a "normal" alloc, so we need to do some special work
+    if (size >= _64KB && !this->list.at(this->index).is_free(size)) // Is bigger than a "normal" alloc, so we need to do some special work
     {
         this->index = find_single(this->list, this->size, size);
         if (this->index == max_chunks() + 1)
         {
-            size_t required_chunks = (size / _64KB);
-            if (required_chunks < 10) { required_chunks = 10; }
-            else { required_chunks = ((required_chunks / 10) + 1) * 10; } // can be optimized with bit shifts
-
+            size_t required_chunks = ((size / _64KB) / 10 + 1) * 10;
             void* buffer = std::calloc(required_chunks, _64KB); // Allocate in multiples of 10
             if (buffer == NULL) { throw error("Could not allocate and set new memory chunks"); }
             this->allocs.push(buffer);
 
             this->index = this->size;
-            this->size += required_chunks * _64KB;
+            ++this->size;
             this->list.at(this->index).set(reinterpret_cast<size_t>(buffer), required_chunks * _64KB);
             return this->list.at(this->index).allocate(size); // If this is ever null, we done boned it up :/
         }
     }
 
-    void* buffer = this->list.at(this->index).allocate(size);
-    if (buffer == NULL)
+    if (this->list.at(this->index).is_free(size)) { return this->list.at(this->index).allocate(size); }
+    else
     {
         if (this->index + 1 > this->size || !this->list.at(this->index + 1).is_free(size))
         {
@@ -101,14 +98,13 @@ void* pool::allocate(const size_t& size)
                 this->allocs.push(buffer);
 
                 this->index = this->size;
-                this->size += 10;
+                ++this->size;
                 this->list.at(this->index).set(reinterpret_cast<size_t>(buffer), 10 * _64KB);
             }
             return this->list.at(this->index).allocate(size);
         }
         else { return this->list.at((++this->index)).allocate(size); }
     }
-    return buffer;
 }
 
 }} /* namespace bank::detail */

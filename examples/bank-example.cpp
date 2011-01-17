@@ -3,6 +3,7 @@
 #include <bank/allocator.hpp>
 
 #include <vector>
+#include <deque>
 
 struct object : public bank::object
 {
@@ -12,18 +13,18 @@ struct object : public bank::object
 };
 
 typedef std::vector<int, bank::allocator<int>> int_vector;
+//typedef std::vector<int> int_vector;
 
 void func(void)
 {
-    int_vector y;
-    for (size_t idx = 0; idx < 100000; ++idx) { y.push_back(idx); }
+    int_vector y(200);
 }
 
 int main(void)
 {
     bank::open(1);
     object* x = new object();
-    func();
+    for(size_t idx = 0; idx < 1000000; ++idx) { func(); }
     delete x;
     bank::close();
 }

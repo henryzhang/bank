@@ -45,7 +45,10 @@ class allocator
         inline const_pointer address(const_reference ref) const { return &ref; }
         inline pointer address(reference ref) const { return &ref; }
 
-        inline pointer allocate(size_type size) { return reinterpret_cast<pointer>(bank::alloc(size)); }
+        inline pointer allocate(size_type size)
+        {
+            return reinterpret_cast<pointer>(bank::alloc(size * sizeof(T)));
+        }
         
         inline void deallocate(pointer p, size_type s) { this->deallocate(static_cast<void*>(p), s); }
         inline void deallocate(void* p, size_type) { bank::free(p); }
