@@ -49,7 +49,7 @@ pool::pool(const size_t& chunks) throw(error) : allocs(max_allocs()), list(max_c
     size_t address = reinterpret_cast<size_t>(buffer);
     for (size_t idx = 0; idx < chunks; ++idx)
     {
-        this->list.at(idx).set(address);
+        this->list.at(idx).set(address, _64KB);
         address += (_64KB + 1);
     }
     this->allocs.push(buffer);
@@ -81,16 +81,10 @@ void* pool::allocate(const size_t& size)
             if (buffer == NULL) { throw error("Could not allocate and set new memory chunks"); }
             this->allocs.push(buffer);
 
-            size_t address = reinterpret_cast<size_t>(buffer);
-            for (this->index = this->size; this->size < required_chunks; ++this->size)
-            {
-                this->list.at(this->size).set(address);
-                address += (_64KB + 1);
-            }
-
-            chunk& combined = this->list.at(this->index);
-            for (size_t idx = this->index; idx < required_chunks; ++idx) { combined.combine(this->list.at(idx)); }
-            return combined.allocate(size); // If this is ever null, we done boned it up :/
+            this->index = this->size;
+            this->size += required_chunks * _64KB;
+            this->list.at(this->index).set(reinterpret_cast<size_t>(buffer), required_chunks * _64KB);
+            return this->list.at(this->index).allocate(size); // If this is ever null, we done boned it up :/
         }
     }
 
@@ -106,12 +100,9 @@ void* pool::allocate(const size_t& size)
                 if (buffer == NULL) { throw error("Could not allocate and set new memory chunks"); }
                 this->allocs.push(buffer);
 
-                size_t address = reinterpret_cast<size_t>(buffer);
-                for (this->index = this->size; this->size != (this->size + 11); ++this->size)
-                {
-                    this->list.at(this->size).set(address);
-                    address += (_64KB + 1);
-                }
+                this->index = this->size;
+                this->size += 10;
+                this->list.at(this->index).set(reinterpret_cast<size_t>(buffer), 10 * _64KB);
             }
             return this->list.at(this->index).allocate(size);
         }

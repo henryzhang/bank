@@ -20,7 +20,7 @@ class chunk
         void combine(const chunk& other);
 
         bool has(const size_t& address) const;
-        void set(const size_t& address);
+        void set(const size_t& address, size_t length);
 
         bool is_combined(void) const;
         bool is_free(const size_t& size) const;

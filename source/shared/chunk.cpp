@@ -41,10 +41,10 @@ void chunk::combine(const chunk& other)
 
 bool chunk::has(const size_t& address) const { return address > this->start && address < this->end; }
 
-void chunk::set(const size_t& address)
+void chunk::set(const size_t& address, size_t length)
 {
     this->start = address;
-    this->end = this->start + _64KB;
+    this->end = this->start + length;
 }
 
 bool chunk::is_combined(void) const { return this->combined; }
