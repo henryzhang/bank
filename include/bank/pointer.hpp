@@ -10,6 +10,8 @@ template <typename T>
 class pointer : public object
 {
     public:
+        template <typename U> inline explicit pointer(const U& value) : ptr(new(alloc(sizeof(T))) ptr(value)) { }
+        inline explicit pointer(const T& copy) : ptr(new(alloc(sizeof(T))) ptr(copy)) { }
         inline explicit pointer(T* ptr) : ptr(ptr) { }
         inline explicit pointer(void) : ptr(new(alloc(sizeof(T))) ptr()) { }
         inline virtual ~pointer(void) { this->ptr->~T(); bank::free(this->ptr); }

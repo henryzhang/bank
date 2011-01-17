@@ -4,8 +4,13 @@ Bank
 Overview
 --------
 
-Bank is a "dumb" chunk-based concurrent/deferred garbage collector and is released under a 3-Clause BSD
-License. Bank uses CMake 2.8 to build, and is compiled and tested on OS X, FreeBSD, Linux and Windows.
+Bank is a "dumb" chunk-based concurrent/deferred memory manager/allocator and is released under a 3-Clause BSD
+License. Bank uses CMake 2.8 to build, and is compiled and tested on OS X, FreeBSD, Linux and Windows.  
+
+Bank has no concept of references (cyclic or otherwise), nor does it understand an unreachable object.
+It only knows how to allocate memory, and to later reuse that memory once it is no longer needed.
+
+Due to my getting all my words mixed up, I ended up calling this a garbage collector for a while. I apologize.
 
 Documentation
 -------------
