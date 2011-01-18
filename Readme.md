@@ -10,7 +10,8 @@ License. Bank uses CMake 2.8 to build, and is compiled and tested on OS X, FreeB
 Bank has no concept of references (cyclic or otherwise), nor does it understand an unreachable object.
 It only knows how to allocate memory, and to later reuse that memory once it is no longer needed.
 
-Due to my getting all my words mixed up, I ended up calling this a garbage collector for a while. I apologize.
+Currently Bank does not perform better in terms of speed compared to the C++ `std::allocator`, however it has
+a less likely chance of creating fragmented memory over a large period of time.
 
 Documentation
 -------------
